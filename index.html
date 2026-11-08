@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mental Health Signal — Student Wellness Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --ink:#17194A;
+  --ink2:#53577F;
+  --muted:#6D7199;
+  --paper:#F5F3FC;
+  --line:#DDD9F0;
+  --brand:#4338CA;
+  --brand2:#6C63FF;
+  --bad:#D9363E;
+  --g1:108,99,255;      /* live glow colours, updated by the orb */
+  --g2:167,139,250;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+html{-webkit-font-smoothing:antialiased}
+body{
+  font-family:var(--body);color:var(--ink);background:var(--paper);
+  min-height:100vh;line-height:1.5;overflow-x:hidden;
+}
+/* the page glows in whatever colour the orb currently is */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(900px 760px at 78% 26%, rgba(var(--g1),.20), transparent 62%),
+    radial-gradient(700px 600px at 6% 104%, rgba(var(--g2),.15), transparent 60%);
+}
+
+/* ============================================================
+   TOP BAR + PAGE GRID
+   ============================================================ */
+.topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:22px clamp(18px,4vw,48px);font-weight:600;font-size:.95rem;color:var(--ink2);
+}
+.live{width:9px;height:9px;border-radius:50%;background:var(--brand2);position:relative}
+.live::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--brand2);animation:ping 2.2s ease-out infinite}
+@keyframes ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(3.2);opacity:0}}
+
+.page{
+  max-width:1280px;margin:0 auto;padding:0 clamp(18px,4vw,48px) 48px;
+  display:grid;gap:0 clamp(32px,6vw,96px);
+  grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr);
+  grid-template-areas:"head stage" "form stage";
+  align-items:start;
+}
+.head{grid-area:head;padding-top:clamp(8px,3vw,32px)}
+.form{grid-area:form;margin-top:44px}
+.stage{grid-area:stage}
+
+/* ============================================================
+   HEADLINE  (the one load-in moment: weight + width settle)
+   ============================================================ */
+h1{
+  font-family:var(--display);font-weight:750;
+  font-size:clamp(3rem,7.4vw,6.6rem);line-height:.94;letter-spacing:-.03em;
+  color:var(--ink);
+}
+h1 span{display:block;animation:settle 1.5s cubic-bezier(.2,.8,.2,1) both}
+h1 span:nth-child(2){padding-left:.55em;animation-delay:.14s}
+@keyframes settle{
+  from{font-weight:200;font-stretch:75%;letter-spacing:.05em;opacity:0}
+  to{font-weight:750;font-stretch:100%;letter-spacing:-.03em;opacity:1}
+}
+.sub{margin-top:22px;max-width:38ch;font-size:1.1rem;color:var(--ink2)}
+
+/* ============================================================
+   FORM
+   ============================================================ */
+.sec{padding-bottom:36px;margin-bottom:36px;border-bottom:1px solid var(--line)}
+.sec:last-of-type{border-bottom:0;margin-bottom:8px;padding-bottom:8px}
+.sec-title{
+  display:flex;align-items:center;gap:12px;margin-bottom:22px;
+  font-family:var(--display);font-weight:650;font-size:1.4rem;letter-spacing:-.01em;
+}
+.sec-title::before{
+  content:"";width:13px;height:13px;border-radius:50%;
+  border:2.5px solid var(--brand2);transition:all .35s cubic-bezier(.3,1.5,.5,1);
+}
+.sec.done .sec-title::before{background:var(--brand2);box-shadow:0 0 0 6px rgba(108,99,255,.18)}
+
+.row{display:grid;gap:24px 20px}
+.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.span{grid-column:1/-1}
+
+.field{min-width:0}
+.lbl{display:block;margin-bottom:8px;font-size:.88rem;font-weight:600;color:var(--ink2)}
+.in{
+  width:100%;font:inherit;font-size:1rem;color:var(--ink);background:#fff;
+  border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;
+  transition:border-color .15s,box-shadow .15s;
+}
+.in::placeholder{color:#A5A8C6}
+.in:hover{border-color:#C4BFE6}
+.in:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px rgba(67,56,202,.14)}
+.in[type=number]{-moz-appearance:textfield;appearance:textfield}
+.in[type=number]::-webkit-inner-spin-button,.in[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.with-unit{position:relative}
+.with-unit .in{padding-right:48px}
+.unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:.85rem;color:var(--muted);pointer-events:none}
+.hint{display:block;margin-top:6px;font-size:.8rem;color:var(--muted)}
+.msg{display:none;margin-top:6px;font-size:.82rem;font-weight:500;color:var(--bad)}
+.field.bad .msg{display:block}
+.field.bad .in{border-color:var(--bad);background:#FFF6F6}
+.field.bad{animation:shake .35s}
+@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+
+/* ---- chips (radio groups) ---- */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.chip span{
+  display:block;padding:9px 16px;border-radius:999px;background:#fff;
+  border:1.5px solid var(--line);font-weight:500;font-size:.94rem;
+  transition:background .2s,border-color .2s,color .2s,transform .15s;
+}
+.chip:hover span{border-color:var(--brand2);transform:translateY(-1px)}
+.chip input:checked+span{background:var(--brand);border-color:var(--brand);color:#fff;animation:pop .32s cubic-bezier(.3,1.6,.5,1)}
+.chip input:focus-visible+span{outline:3px solid rgba(67,56,202,.45);outline-offset:2px}
+@keyframes pop{0%{transform:scale(.9)}100%{transform:scale(1)}}
+.field.bad .chip span{border-color:var(--bad)}
+
+/* ---- hour sliders ---- */
+.rng{
+  -webkit-appearance:none;appearance:none;display:block;width:100%;height:22px;margin-top:12px;cursor:pointer;
+  background:linear-gradient(to right,var(--brand2) var(--p,0%),var(--line) var(--p,0%)) no-repeat center/100% 6px;
+}
+.rng:focus{outline:none}
+.rng::-webkit-slider-runnable-track{height:22px;background:transparent}
+.rng::-moz-range-track{height:22px;background:transparent}
+.rng::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;margin-top:1px;border-radius:50%;
+  background:#fff;border:3px solid var(--brand);box-shadow:0 3px 8px rgba(23,25,74,.25);transition:transform .15s;
+}
+.rng::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--brand);box-shadow:0 3px 8px rgba(23,25,74,.25)}
+.rng:hover::-webkit-slider-thumb{transform:scale(1.12)}
+.rng:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 6px rgba(67,56,202,.25)}
+.rng:focus-visible::-moz-range-thumb{box-shadow:0 0 0 6px rgba(67,56,202,.25)}
+
+/* ---- stress: segmented control with a sliding thumb ---- */
+.seg{
+  position:relative;display:grid;grid-template-columns:repeat(4,1fr);isolation:isolate;
+  background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:4px;
+}
+.seg .thumb{
+  position:absolute;z-index:-1;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/4);
+  border-radius:10px;background:var(--lv,var(--brand));opacity:0;
+  transform:translateX(calc(var(--i,0)*100%));
+  transition:transform .4s cubic-bezier(.3,1.4,.5,1),background .25s,opacity .2s;
+}
+.seg.has .thumb{opacity:1}
+.seg-opt{position:relative;text-align:center}
+.seg-opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.seg-opt span{display:block;padding:11px 4px;font-weight:600;font-size:.92rem;color:var(--ink2);transition:color .2s}
+.seg-opt input:checked+span{color:#fff}
+.seg-opt input:focus-visible+span{outline:3px solid rgba(67,56,202,.45);outline-offset:-3px;border-radius:10px}
+.field.bad .seg{border-color:var(--bad)}
+
+/* ---- submit ---- */
+.go{
+  position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:12px;margin-top:8px;
+  font:inherit;font-weight:700;font-size:1.05rem;color:#fff;background:var(--ink);
+  border:0;border-radius:999px;padding:17px 32px;cursor:pointer;
+  transition:transform .15s,box-shadow .25s;
+}
+.go::after{
+  content:"";position:absolute;inset:0;transform:translateX(-120%);
+  background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);
+  transition:transform .7s;
+}
+.go:hover{transform:translateY(-2px);box-shadow:0 16px 32px -12px rgba(23,25,74,.55)}
+.go:hover::after{transform:translateX(120%)}
+.go:active{transform:translateY(0) scale(.98)}
+.go:focus-visible{outline:3px solid rgba(67,56,202,.5);outline-offset:3px}
+.go:disabled{opacity:.8;cursor:progress}
+.spin{display:none;width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:rot .7s linear infinite}
+.go.loading .spin{display:inline-block}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ============================================================
+   STAGE  (orb + ring gauge)
+   ============================================================ */
+.stage{
+  position:sticky;top:20px;display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding-top:clamp(0px,3vw,28px);
+}
+.orb-wrap{position:relative;width:min(100%,520px);aspect-ratio:1;animation:bloom 1.4s cubic-bezier(.2,.9,.2,1) both}
+@keyframes bloom{from{opacity:0;transform:scale(.55) rotate(-25deg)}to{opacity:1;transform:none}}
+#orb{position:absolute;inset:0;width:100%;height:100%}
+.readout{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:#fff;text-shadow:0 2px 16px rgba(23,25,74,.4)}
+.ro{display:flex;flex-direction:column;align-items:center;line-height:1}
+.ro b{font-family:var(--display);font-weight:750;font-size:clamp(3.4rem,10vw,5.6rem);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ro small{margin-top:8px;font-size:.95rem;font-weight:600;opacity:.92}
+.ro-result{flex-direction:row;align-items:baseline;gap:4px}
+.ro-result small{font-size:1.2rem;margin:0}
+.ro-loading{flex-direction:row;gap:10px}
+.ro-loading i{width:13px;height:13px;border-radius:50%;background:#fff;animation:bob 1s ease-in-out infinite}
+.ro-loading i:nth-child(2){animation-delay:.15s}
+.ro-loading i:nth-child(3){animation-delay:.3s}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(-12px);opacity:1}}
+
+.state{display:flex;flex-direction:column;align-items:center;margin-top:6px}
+.state h2{font-family:var(--display);font-weight:650;font-size:1.7rem;letter-spacing:-.015em;line-height:1.15}
+.state p{margin-top:8px;max-width:32ch;color:var(--ink2)}
+.ghost{
+  margin-top:20px;font:inherit;font-weight:700;color:var(--ink);background:transparent;
+  border:2px solid var(--ink);border-radius:999px;padding:11px 26px;cursor:pointer;
+  transition:background .2s,color .2s,transform .12s;
+}
+.ghost:hover{background:var(--ink);color:#fff}
+.ghost:active{transform:scale(.97)}
+.ghost:focus-visible{outline:3px solid rgba(67,56,202,.5);outline-offset:3px}
+.state-result .band{display:inline-flex;align-items:center;gap:10px}
+.state-result .band::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--band,var(--brand2))}
+.state-result{animation:rise .6s cubic-bezier(.2,.9,.2,1) both}
+.state-error{animation:rise .5s both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.foot{max-width:1280px;margin:0 auto;padding:0 clamp(18px,4vw,48px) 56px;text-align:center;font-size:.85rem;color:var(--muted)}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:960px){
+  .page{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "stage" "form"}
+  .form{margin-top:28px}
+  .stage{position:static;padding-top:12px;margin-top:8px}
+  .orb-wrap{width:min(78vw,380px)}
+}
+@media (max-width:680px){
+  .c3{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .c2,.c3{grid-template-columns:minmax(0,1fr)}
+  .seg-opt span{font-size:.82rem;padding:11px 2px}
+  .go{width:100%;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><span class="live" aria-hidden="true"></span>Student Wellness Analytics</div>
+
+<div class="page">
+
+  <header class="head">
+    <h1><span>Mental Health</span><span>Signal</span></h1>
+    <p class="sub">A quick read on how habits, screen time, and stress are trending — modeled from your daily rhythm, not a diagnosis.</p>
+  </header>
+
+  <!-- ===================== FORM ===================== -->
+  <form class="form" id="predict-form" novalidate>
+
+    <section class="sec" data-fields="age,gender,country" aria-labelledby="h-profile">
+      <h2 class="sec-title" id="h-profile">Profile</h2>
+      <div class="row c3">
+        <div class="field">
+          <label class="lbl" for="age">Age</label>
+          <input class="in" type="number" id="age" name="age" min="10" max="100" step="1" required placeholder="e.g. 21" inputmode="numeric">
+          <span class="hint">10–100</span>
+          <span class="msg"></span>
+        </div>
+        <div class="field">
+          <span class="lbl" id="gender-l">Gender</span>
+          <div class="chips" id="gender" data-chips="gender" role="radiogroup" aria-labelledby="gender-l"></div>
+          <span class="msg"></span>
+        </div>
+        <div class="field">
+          <label class="lbl" for="country">Country</label>
+          <input class="in" type="text" id="country" name="country" list="country-list" required placeholder="e.g. India" autocomplete="off">
+          <datalist id="country-list">
+            <option value="India"></option><option value="USA"></option><option value="Canada"></option>
+            <option value="Australia"></option><option value="UK"></option><option value="Germany"></option>
+            <option value="Mexico"></option><option value="Turkey"></option><option value="France"></option>
+          </datalist>
+          <span class="hint">Not listed? Type it anyway.</span>
+          <span class="msg"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" data-fields="academic_level,most_used_platform,purpose_of_use,avg_daily_usage_hours,daily_unlocks" aria-labelledby="h-habits">
+      <h2 class="sec-title" id="h-habits">Academic &amp; Digital Habits</h2>
+      <div class="row c2">
+        <div class="field span">
+          <span class="lbl" id="academic_level-l">Academic level</span>
+          <div class="chips" id="academic_level" data-chips="academic_level" role="radiogroup" aria-labelledby="academic_level-l"></div>
+          <span class="msg"></span>
+        </div>
+        <div class="field span">
+          <span class="lbl" id="most_used_platform-l">Most-used platform</span>
+          <div class="chips" id="most_used_platform" data-chips="most_used_platform" role="radiogroup" aria-labelledby="most_used_platform-l"></div>
+          <span class="msg"></span>
+        </div>
+        <div class="field span">
+          <span class="lbl" id="purpose_of_use-l">Primary purpose</span>
+          <div class="chips" id="purpose_of_use" data-chips="purpose_of_use" role="radiogroup" aria-labelledby="purpose_of_use-l"></div>
+          <span class="msg"></span>
+        </div>
+        <div class="field" data-num="avg_daily_usage_hours" data-label="Avg. daily screen time" data-slider="16"></div>
+        <div class="field">
+          <label class="lbl" for="daily_unlocks">Daily phone unlocks</label>
+          <input class="in" type="number" id="daily_unlocks" name="daily_unlocks" min="0" step="1" required placeholder="e.g. 60" inputmode="numeric">
+          <span class="msg"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" data-fields="study_hours,physical_activity_hours,sleep_hours_per_night,stress_level" aria-labelledby="h-life">
+      <h2 class="sec-title" id="h-life">Lifestyle &amp; Stress</h2>
+      <div class="row c3">
+        <div class="field" data-num="study_hours" data-label="Study hours / day" data-slider="12"></div>
+        <div class="field" data-num="physical_activity_hours" data-label="Physical activity / day" data-slider="6"></div>
+        <div class="field" data-num="sleep_hours_per_night" data-label="Sleep / night" data-slider="12"></div>
+        <div class="field span">
+          <span class="lbl" id="stress_level-l">Perceived stress level</span>
+          <div class="seg" id="stress_level" role="radiogroup" aria-labelledby="stress_level-l"></div>
+          <span class="msg"></span>
+        </div>
+      </div>
+    </section>
+
+    <button type="submit" class="go" id="submit-btn">
+      <span class="btn-label">Read my signal</span>
+      <span class="spin" aria-hidden="true"></span>
+    </button>
+  </form>
+
+  <!-- ===================== STAGE ===================== -->
+  <aside class="stage" id="stage" aria-live="polite">
+    <div class="orb-wrap">
+      <canvas id="orb" aria-hidden="true"></canvas>
+      <div class="readout">
+        <div class="ro ro-idle" id="ro-idle"><b id="fill-num">0</b><small>of 12 answered</small></div>
+        <div class="ro ro-loading" id="ro-loading" hidden><i></i><i></i><i></i></div>
+        <div class="ro ro-result" id="ro-result" hidden><b id="score-number">0.00</b><small>/10</small></div>
+        <div class="ro ro-error" id="ro-error" hidden><b>!</b></div>
+      </div>
+    </div>
+
+    <div class="state state-idle" id="state-idle">
+      <h2 class="idle-label">Your score will appear here</h2>
+      <p class="idle-copy">Fill in the form and submit to generate a predicted mental health score from 0–10.</p>
+    </div>
+
+    <div class="state state-loading" id="state-loading" hidden>
+      <h2 class="loading-label">Reading the signal…</h2>
+      <p class="loading-copy">Running your habits through the model.</p>
+    </div>
+
+    <div class="state state-result" id="state-result" hidden>
+      <h2 class="band" id="score-band">—</h2>
+      <p id="score-context"></p>
+      <button type="button" class="ghost" id="reset-btn">Run another read</button>
+    </div>
+
+    <div class="state state-error" id="state-error" hidden>
+      <h2 id="error-label">Something went wrong</h2>
+      <p id="error-copy"></p>
+      <button type="button" class="ghost" id="error-retry-btn">Try again</button>
+    </div>
+  </aside>
+</div>
+
+<footer class="foot">
+  <p>Built for informational purposes only — this is not a clinical assessment. If you're struggling, please talk to someone you trust.</p>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------------------------------------------------------
+     Config
+     --------------------------------------------------------- */
+  // Served by FastAPI at http://127.0.0.1:8000/  -> same origin ("").
+  // Opened from disk (file://) or another local port (Live Server) -> call the API explicitly.
+  const isLocal = ["localhost", "127.0.0.1", ""].includes(location.hostname);
+   const API_BASE = "http://127.0.0.1:8000";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  const OPTIONS = {
+    gender: ["Male", "Female"],
+    academic_level: ["High School", "Undergraduate", "Graduate"],
+    most_used_platform: ["Facebook","Instagram","Snapchat","Twitter","YouTube","TikTok","LinkedIn","LINE","KakaoTalk","VKontakte","WhatsApp","WeChat"],
+    purpose_of_use: ["Networking", "Education", "Entertainment", "News"],
+    stress_level: ["Low", "Medium", "High", "Very High"],
+  };
+  const NAMES = ["age","gender","country","academic_level","most_used_platform","purpose_of_use",
+                 "avg_daily_usage_hours","daily_unlocks","study_hours","physical_activity_hours",
+                 "sleep_hours_per_night","stress_level"];
+  const STRESS_COLOR = { "Low":"#0D9488", "Medium":"#D97706", "High":"#EA580C", "Very High":"#DC2626" };
+
+  const form = $("#predict-form");
+  const submitBtn = $("#submit-btn");
+
+  /* ---------------------------------------------------------
+     Build chips, stress control and hour fields
+     --------------------------------------------------------- */
+  $$("[data-chips]").forEach(box => {
+    const name = box.dataset.chips;
+    box.innerHTML = OPTIONS[name].map(v =>
+      `<label class="chip"><input type="radio" name="${name}" value="${v}"><span>${v}</span></label>`).join("");
+  });
+
+  const seg = $("#stress_level");
+  seg.innerHTML = `<i class="thumb"></i>` + OPTIONS.stress_level.map(v =>
+    `<label class="seg-opt"><input type="radio" name="stress_level" value="${v}"><span>${v}</span></label>`).join("");
+  seg.addEventListener("change", e => {
+    seg.style.setProperty("--i", OPTIONS.stress_level.indexOf(e.target.value));
+    seg.style.setProperty("--lv", STRESS_COLOR[e.target.value]);
+    seg.classList.add("has");
+  });
+
+  $$("[data-num]").forEach(box => {
+    const n = box.dataset.num, label = box.dataset.label, sMax = box.dataset.slider;
+    box.innerHTML =
+      `<label class="lbl" for="${n}">${label}</label>
+       <div class="with-unit">
+         <input class="in" type="number" id="${n}" name="${n}" min="0" max="24" step="0.1" required placeholder="0.0" inputmode="decimal">
+         <span class="unit">hrs</span>
+       </div>
+       <input class="rng" type="range" min="0" max="${sMax}" step="0.1" value="0" aria-label="${label} slider">
+       <span class="msg"></span>`;
+    const num = $("input[type=number]", box), rng = $(".rng", box);
+    const paint = () => {
+      const v = Math.min(Math.max(parseFloat(num.value) || 0, 0), +rng.max);
+      rng.value = v;
+      rng.style.setProperty("--p", (v / rng.max * 100) + "%");
+    };
+    num.addEventListener("input", paint);
+    rng.addEventListener("input", () => {
+      num.value = (+rng.value).toFixed(1);
+      paint();
+      num.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+
+  /* ---------------------------------------------------------
+     Field error helpers
+     --------------------------------------------------------- */
+  const fieldOf = el => el.closest(".field");
+  function setErr(el, text) {
+    const w = fieldOf(el); if (!w) return;
+    w.classList.remove("bad"); void w.offsetWidth; w.classList.add("bad");
+    $(".msg", w).textContent = text;
+  }
+  function clrErr(el) {
+    const w = el && fieldOf(el); if (!w) return;
+    w.classList.remove("bad"); $(".msg", w).textContent = "";
+  }
+  const clearAll = () => $$(".field.bad", form).forEach(w => { w.classList.remove("bad"); $(".msg", w).textContent = ""; });
+
+  /* ---------------------------------------------------------
+     Payload + validation (mirrors the FastAPI StudentData model)
+     --------------------------------------------------------- */
+  const val = n => String(form.elements[n].value ?? "").trim();
+  const numOf = n => (val(n) === "" ? NaN : Number(val(n)));
+
+  function collect() {
+    return {
+      age: numOf("age"),
+      gender: val("gender"),
+      country: val("country"),
+      academic_level: val("academic_level"),
+      most_used_platform: val("most_used_platform"),
+      purpose_of_use: val("purpose_of_use"),
+      avg_daily_usage_hours: numOf("avg_daily_usage_hours"),
+      daily_unlocks: numOf("daily_unlocks"),
+      study_hours: numOf("study_hours"),
+      physical_activity_hours: numOf("physical_activity_hours"),
+      sleep_hours_per_night: numOf("sleep_hours_per_night"),
+      stress_level: val("stress_level"),
+    };
+  }
+
+  function validate(p) {
+    const errs = [];
+    const el = id => document.getElementById(id);
+    const ranges = [["age",10,100,true],["avg_daily_usage_hours",0,24,false],["daily_unlocks",0,Infinity,true],
+                    ["study_hours",0,24,false],["physical_activity_hours",0,24,false],["sleep_hours_per_night",0,24,false]];
+    ranges.forEach(([k, min, max, int]) => {
+      const v = p[k];
+      if (Number.isNaN(v)) errs.push([el(k), "This field is required."]);
+      else if (int && !Number.isInteger(v)) errs.push([el(k), "Enter a whole number."]);
+      else if (v < min || v > max) errs.push([el(k), `Must be between ${min} and ${max === Infinity ? "0+" : max}.`]);
+    });
+    ["gender","country","academic_level","most_used_platform","purpose_of_use"].forEach(k => {
+      if (!p[k]) errs.push([el(k), k === "country" ? "This field is required." : "Pick one option."]);
+    });
+    if (!p.stress_level) errs.push([el("stress_level"), "Pick a stress level."]);
+    return errs;
+  }
+
+  /* ---------------------------------------------------------
+     Orb + ring gauge (canvas)
+     --------------------------------------------------------- */
+  const PAL = {
+    idle:     [[108, 99,255],[167,139,250]],
+    strained: [[229, 72, 77],[157, 23, 77]],
+    balanced: [[217,119,  6],[ 67, 56,202]],
+    strong:   [[ 13,148,136],[ 55, 48,163]],
+    error:    [[107,112,144],[ 63, 66, 98]],
+  };
+  const cv = $("#orb"), ctx = cv.getContext("2d");
+  const root = document.documentElement;
+  const orb = {
+    c1: [...PAL.idle[0]], c2: [...PAL.idle[1]], t1: [...PAL.idle[0]], t2: [...PAL.idle[1]],
+    amp: .22, tAmp: .05, speed: 1, tSpeed: .6, prog: 0, tProg: 0, ripples: [],
+  };
+  let W = 0, H = 0, dpr = 1, clock = 0, last = performance.now(), lastGlow = "";
+
+  function resize() {
+    const r = cv.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  new ResizeObserver(resize).observe(cv);
+  resize();
+
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+  const lighten = (c, k) => c.map(v => v + (255 - v) * k);
+
+  function setOrb(key, amp, speed, prog) {
+    orb.t1 = [...PAL[key][0]]; orb.t2 = [...PAL[key][1]];
+    orb.tAmp = reduce ? Math.min(amp, .03) : amp;
+    orb.tSpeed = reduce ? Math.min(speed, .3) : speed;
+    if (prog !== undefined) orb.tProg = prog;
+  }
+  function ripple(strong) {
+    if (reduce) return;
+    orb.ripples.push({ age: 0, dur: strong ? 1.5 : .9, strong });
+  }
+
+  function blob(cx, cy, r, amp, phase) {
+    const N = 96;
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a = i / N * Math.PI * 2;
+      const n = Math.sin(a * 3 + clock * 1.1 + phase) * .5
+              + Math.sin(a * 5 - clock * 1.6 + phase * 2) * .3
+              + Math.sin(a * 2 + clock * .7 + 1.3) * .4;
+      const rr = r * (1 + amp * n);
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  function draw() {
+    if (!W) return;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2;
+    const orbR = R * .6, ringR = R * .93;
+    const a0 = .75 * Math.PI, a1 = 2.25 * Math.PI;
+
+    /* ring: track, ticks, progress, knob */
+    ctx.lineCap = "round";
+    ctx.lineWidth = R * .036;
+    ctx.strokeStyle = "rgba(23,25,74,.10)";
+    ctx.beginPath(); ctx.arc(cx, cy, ringR, a0, a1); ctx.stroke();
+
+    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(23,25,74,.28)";
+    for (let i = 0; i <= 10; i++) {
+      const ang = a0 + (a1 - a0) * i / 10, major = i % 5 === 0;
+      const r1 = ringR - R * .06, r2 = ringR - R * (major ? .115 : .095);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(ang) * r1, cy + Math.sin(ang) * r1);
+      ctx.lineTo(cx + Math.cos(ang) * r2, cy + Math.sin(ang) * r2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(23,25,74,.55)";
+    ctx.font = `600 ${Math.max(11, R * .045)}px Figtree, system-ui, sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    [0, 5, 10].forEach(i => {
+      const ang = a0 + (a1 - a0) * i / 10, r = ringR - R * .17;
+      ctx.fillText(String(i), cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
+    });
+
+    if (orb.prog > .002) {
+      const g = ctx.createLinearGradient(cx - R, cy, cx + R, cy);
+      g.addColorStop(0, rgba(orb.c1)); g.addColorStop(1, rgba(orb.c2));
+      ctx.strokeStyle = g; ctx.lineWidth = R * .036;
+      ctx.beginPath(); ctx.arc(cx, cy, ringR, a0, a0 + (a1 - a0) * orb.prog); ctx.stroke();
+      const ea = a0 + (a1 - a0) * orb.prog;
+      ctx.beginPath(); ctx.arc(cx + Math.cos(ea) * ringR, cy + Math.sin(ea) * ringR, R * .036, 0, Math.PI * 2);
+      ctx.fillStyle = "#fff"; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = rgba(orb.c1); ctx.stroke();
+    }
+
+    /* soft back layers */
+    ctx.save();
+    ctx.globalAlpha = .22; ctx.fillStyle = rgba(orb.c2);
+    blob(cx, cy, orbR * 1.13, orb.amp * 1.3, 1.7); ctx.fill();
+    ctx.globalAlpha = .32; ctx.fillStyle = rgba(orb.c1);
+    blob(cx, cy, orbR * 1.05, orb.amp * 1.1, 3.1); ctx.fill();
+    ctx.restore();
+
+    /* main body */
+    const breathe = 1 + .018 * Math.sin(clock * 1.3);
+    blob(cx, cy, orbR * breathe, orb.amp, 0);
+    ctx.shadowColor = rgba(orb.c2, .45); ctx.shadowBlur = 50 * dpr; ctx.shadowOffsetY = 26 * dpr;
+    const body = ctx.createRadialGradient(cx - orbR * .35, cy - orbR * .4, orbR * .05, cx, cy, orbR * 1.2);
+    body.addColorStop(0, rgba(lighten(orb.c1, .45)));
+    body.addColorStop(.38, rgba(orb.c1));
+    body.addColorStop(1, rgba(orb.c2));
+    ctx.fillStyle = body; ctx.fill();
+    ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+    ctx.save(); ctx.clip();
+    const gloss = ctx.createRadialGradient(cx - orbR * .38, cy - orbR * .45, 0, cx - orbR * .38, cy - orbR * .45, orbR * .55);
+    gloss.addColorStop(0, "rgba(255,255,255,.38)"); gloss.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gloss; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+
+    /* ripples */
+    ctx.lineWidth = 2;
+    orb.ripples = orb.ripples.filter(rp => rp.age < rp.dur);
+    orb.ripples.forEach(rp => {
+      const p = rp.age / rp.dur;
+      ctx.strokeStyle = rgba(orb.c1, (1 - p) * (rp.strong ? .55 : .28));
+      ctx.beginPath(); ctx.arc(cx, cy, orbR * (1.06 + p * (rp.strong ? .55 : .22)), 0, Math.PI * 2); ctx.stroke();
+    });
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    const k = 1 - Math.exp(-dt * 5);
+    for (let i = 0; i < 3; i++) { orb.c1[i] = lerp(orb.c1[i], orb.t1[i], k); orb.c2[i] = lerp(orb.c2[i], orb.t2[i], k); }
+    orb.amp = lerp(orb.amp, orb.tAmp, k);
+    orb.speed = lerp(orb.speed, orb.tSpeed, k);
+    orb.prog = lerp(orb.prog, orb.tProg, k * .7);
+    clock += dt * orb.speed;
+    orb.ripples.forEach(r => r.age += dt);
+
+    const g = orb.c1.map(Math.round).join(",");
+    if (g !== lastGlow) {
+      lastGlow = g;
+      root.style.setProperty("--g1", g);
+      root.style.setProperty("--g2", orb.c2.map(Math.round).join(","));
+    }
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  /* ---------------------------------------------------------
+     UI states
+     --------------------------------------------------------- */
+  const STATES = {
+    idle: ["state-idle", "ro-idle"], loading: ["state-loading", "ro-loading"],
+    result: ["state-result", "ro-result"], error: ["state-error", "ro-error"],
+  };
+  let mode = "idle";
+  function showState(name) {
+    mode = name;
+    Object.entries(STATES).forEach(([k, [a, b]]) => { $("#" + a).hidden = k !== name; $("#" + b).hidden = k !== name; });
+  }
+
+  function answered() { return NAMES.filter(n => val(n) !== "").length; }
+  function syncProgress() {
+    const k = answered();
+    $("#fill-num").textContent = k;
+    $$(".sec", form).forEach(sec => sec.classList.toggle("done", sec.dataset.fields.split(",").every(n => val(n) !== "")));
+    if (mode === "idle") orb.tProg = k / NAMES.length;
+  }
+
+  function toIdle() {
+    showState("idle"); setOrb("idle", .05, .6, answered() / NAMES.length); syncProgress();
+  }
+
+  function bandFor(s) {
+    if (s < 4) return { key: "strained", label: "Signal: strained", amp: .09, speed: 1.5, color: "#E5484D",
+      context: "Your responses suggest elevated strain right now. Small shifts in sleep or screen time can go a long way." };
+    if (s < 7) return { key: "balanced", label: "Signal: balanced", amp: .06, speed: .9, color: "#D97706",
+      context: "Your rhythm looks fairly steady, with some room to recover and reset." };
+    return { key: "strong", label: "Signal: strong", amp: .04, speed: .6, color: "#0D9488",
+      context: "Your habits point to a well-supported, resilient baseline. Keep it up." };
+  }
+
+  function countTo(target) {
+    const el = $("#score-number");
+    if (reduce) { el.textContent = target.toFixed(2); return; }
+    const t0 = performance.now(), dur = 1400;
+    (function step(now) {
+      const p = Math.min((now - t0) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (target * e).toFixed(2);
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  function bringStageIntoView() {
+    if (innerWidth <= 960) $("#stage").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  }
+
+  function renderResult(score) {
+    const s = Math.max(0, Math.min(10, score));
+    const b = bandFor(s);
+    $("#score-band").textContent = b.label;
+    $("#score-band").style.setProperty("--band", b.color);
+    $("#score-context").textContent = b.context;
+    showState("result");
+    setOrb(b.key, b.amp, b.speed, s / 10);
+    ripple(true);
+    countTo(score);
+    bringStageIntoView();
+  }
+
+  function renderError(label, copy) {
+    $("#error-label").textContent = label;
+    $("#error-copy").textContent = copy;
+    showState("error");
+    setOrb("error", .02, .3, 0);
+    bringStageIntoView();
+  }
+
+  /* ---------------------------------------------------------
+     Server-side 422 errors -> field messages
+     --------------------------------------------------------- */
+  function applyServerErrors(detail) {
+    if (!Array.isArray(detail)) return false;
+    let hit = false;
+    detail.forEach(e => {
+      const f = Array.isArray(e.loc) ? e.loc[e.loc.length - 1] : null;
+      const el = f && document.getElementById(f);
+      if (el) { setErr(el, e.msg || "Invalid value."); hit = true; }
+    });
+    return hit;
+  }
+
+  /* ---------------------------------------------------------
+     Submit
+     --------------------------------------------------------- */
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    clearAll();
+    const payload = collect();
+    const errs = validate(payload);
+    if (errs.length) {
+      errs.forEach(([el, msg]) => el && setErr(el, msg));
+      const first = errs[0][0];
+      (first.matches("input") ? first : first.querySelector("input"))?.focus({ preventScroll: false });
+      return;
+    }
+
+    submitBtn.disabled = true; submitBtn.classList.add("loading");
+    showState("loading"); setOrb("idle", .13, 3, .12);
+    if (innerWidth <= 960) bringStageIntoView();
+    const minWait = new Promise(r => setTimeout(r, 900));   // let the loading state be seen
+
+    try {
+      const res = await fetch(`${API_BASE}/predict`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => null);
+      await minWait;
+
+      if (res.status === 422) {
+        const matched = body && applyServerErrors(body.detail);
+        renderError("Check your inputs", matched
+          ? "The API rejected a few fields — details are marked on the form."
+          : "The API rejected this submission. Please review your inputs and try again.");
+        return;
+      }
+      if (!res.ok) {
+        renderError("Prediction failed", body && typeof body.detail === "string"
+          ? body.detail : `The API responded with status ${res.status}.`);
+        return;
+      }
+      const score = body && body.predicted_mental_health_score;
+      if (typeof score !== "number" || !Number.isFinite(score)) {
+        renderError("Unexpected response", "The API responded, but the score was missing or malformed.");
+        return;
+      }
+      renderResult(score);
+    } catch (err) {
+      await minWait;
+      renderError("Can't reach the server",
+        `Couldn't connect to ${API_BASE || location.origin}. Start the backend with "python main.py", then open http://127.0.0.1:8000.`);
+    } finally {
+      submitBtn.disabled = false; submitBtn.classList.remove("loading");
+    }
+  });
+
+  /* ---------------------------------------------------------
+     Live feedback while typing
+     --------------------------------------------------------- */
+  let lastPulse = 0;
+  form.addEventListener("input", e => {
+    clrErr(e.target);
+    syncProgress();
+    const now = performance.now();
+    if (now - lastPulse > 350) { lastPulse = now; ripple(false); }
+  });
+  form.addEventListener("change", e => {
+    clrErr(e.target.closest(".chips, .seg") || e.target);
+    syncProgress();
+    ripple(false);
+  });
+
+  $("#reset-btn").addEventListener("click", () => {
+    toIdle();
+    if (innerWidth <= 960) form.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  });
+  $("#error-retry-btn").addEventListener("click", () => {
+    toIdle();
+    const bad = $(".field.bad", form);
+    if (bad) bad.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  });
+
+  toIdle();
+})();
+</script>
+</body>
+</html>
